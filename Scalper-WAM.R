@@ -4,7 +4,7 @@ library(jsonlite)
 library(plyr)
 
 since = as.Date("2017-08-30")
-until = as.Date("2017-09-01")
+until = as.Date("2017-09-04")
 post_type = 'all'
 
 
@@ -29,7 +29,6 @@ posts   = id_data$data
 has_next_page = TRUE
 num_processed = 0
 statuses = vector()
-scrape_starttime = datetime.datetime.now()
 
 while (has_next_page == TRUE ){
   for (i in posts$id){
@@ -264,5 +263,12 @@ for(status in statuses){
 }
 colnames(final) = c('status_id','permalink','post_type','sharetext','headline','link','full_picture','created_time','date','hour','page_total_likes','page_new_likes','post_impressions','post_reach','post_reach_fan_unique','post_reach_viral_unique','comments_on_post','likes_on_post','shares_on_post','total_comments','total_likes','total_shares','comments_on_shares','likes_on_shares','shares_on_shares','link_clicks','photo_view','video_play','other_clicks','post_negative_feedback','post_story_adds','post_stories','post_storytellers','post_consumptions','post_engaged_users','post_engaged_fan','post_video_complete_views_30s_autoplayed','post_video_complete_views_30s_clicked_to_play','post_video_complete_views_30s_organic','post_video_complete_views_30s_paid','post_video_complete_views_30s_unique','post_video_avg_time_watched','post_video_complete_views_organic_unique','post_video_length','post_video_views','post_video_views_autoplayed','post_video_views_clicked_to_play','post_video_views_10s_unique','post_video_views_10s_autoplayed','post_video_views_10s_clicked_to_play','post_video_views_10s_sound_on','post_video_views_sound_on','s0',	's1',	's2',	's3',	's4',	's5',	's6',	's7',	's8',	's9',	's10',	's11',	's12',	's13',	's14',	's15',	's16',	's17',	's18',	's19',	's20',	's21',	's22',	's23',	's24',	's25',	's26',	's27',	's28',	's29',	's30',	's31',	's32',	's33',	's34',	's35',	's36',	's37',	's38',	's39',	's40')
 
-write.csv(final, paste(as.character(Sys.Date()), ".csv"), row.names = FALSE)
+# con<-file(paste(as.character(Sys.Date()), ".csv"), encoding="UTF-8")
+write.csv(final, paste(as.character(Sys.Date()), '.csv'), row.names = FALSE, fileEncoding = "UTF-8")
 
+# X4 <- read.csv("test4.csv", header = T)
+# 
+# X4$v2 <- paste(X4$text, "נווה שאנן")
+# 
+# 
+# write.csv(X4, "test4.csv", row.names=FALSE)

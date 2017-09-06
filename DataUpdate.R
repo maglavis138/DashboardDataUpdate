@@ -2,17 +2,25 @@ library(plyr)
 library(RMySQL)
 
 mydb = dbConnect(MySQL(), host = "104.198.210.36", user = "root", password = "tacozombies54992", db = "analytics")
-rs <- dbSendQuery(mydb, "select status_id, feed_likes, love, wow, haha, sad, angry, post_source_type, from_name from FEED_DATA")
-ReactionsData <- fetch(rs, -1)
-rs <- dbSendQuery(mydb, "select * from CONTENT_TRACK")
-ContentTrackData <- fetch(rs, -1)
+rs <- dbSendQuery(mydb, "select * from FEED_DATA")
+WamFeedData <- fetch(rs, -1)
+# rs <- dbSendQuery(mydb, "select * from CONTENT_TRACK")
+# ContentTrackData <- fetch(rs, -1)
 rs <- dbSendQuery(mydb, "select * from EDITORIAL_AUTHOR")
 EditorialData <- fetch(rs, -1)
+rs <- dbSendQuery(mydb, "select * from POST_DATA")
+WamPostData <- fetch(rs, -1)
+rs <- dbSendQuery(mydb, "select * from PAGE_DATA where from_name = 'We are mitu'")
+WamPageData <- fetch(rs, -1)
 dbClearResult(rs)
 dbDisconnect(mydb)
 
+WamPageData$date <- as.Date(WamPageData$date)
+WamFeedData$date <- as.Date(WamFeedData$date)
 
-Data <- read.csv("Facebook Insights WAM.csv", header = TRUE, stringsAsFactors = FALSE)
+Data <- merge(WamFeedData, WamPostData, by = "status_id", all.x = TRUE)
+
+# Data <- read.csv("Facebook Insights WAM.csv", header = TRUE, stringsAsFactors = FALSE)
 LinkData <- read.csv("LinkData.csv", header = TRUE, stringsAsFactors = FALSE)
 VideoData <- read.csv("VideoData.csv", header = TRUE, stringsAsFactors = FALSE)
 PhotoData <- read.csv("PhotoData.csv", header = TRUE, stringsAsFactors = FALSE)
@@ -28,21 +36,21 @@ VideoDataFC <- read.csv("VideoDataFC.csv", header = TRUE, stringsAsFactors = FAL
 PhotoDataFC <- read.csv("PhotoDataFC.csv", header = TRUE, stringsAsFactors = FALSE)
 
 
-Data <- merge(Data, ReactionsData, by = "status_id", all.x = TRUE)
+# Data <- merge(Data, ReactionsData, by = "status_id", all.x = TRUE)
 Data <- Data[!duplicated(Data),]
-Data$created_time <- as.POSIXct(strptime(Data$created_time, "%d/%m/%Y %H:%M"), tz = "GMT")
-Data$date = strptime(Data$date, "%d/%m/%Y")
+# Data$created_time <- as.POSIXct(strptime(Data$created_time, "%d/%m/%Y %H:%M"), tz = "GMT")
+# Data$date = strptime(Data$date, "%d/%m/%Y")
+Data$created_time <- as.POSIXct(strptime(Data$created_time, "%Y-%m-%d %H:%M:%S"), tz = "GMT")
 Data$date <- as.Date(Data$date)
-# Data[Data$sharetext == "",]$sharetext <- "No Share Text"
 Data[Data$sharetext == "",]$sharetext <- as.character(Data[Data$sharetext == "",]$status_id)
 Data[Data$headline == "",]$headline <- as.character(Data[Data$headline == "",]$status_id)
-Encoding(Data$sharetext) <- "latin1"
-Encoding(Data$headline) <- "latin1"
+# Encoding(Data$sharetext) <- "latin1"
+# Encoding(Data$headline) <- "latin1"
 Data$total_interactions <- Data$total_comments+Data$total_likes + Data$total_shares
 Data$interaction_rate <- (Data$total_comments+Data$total_likes + Data$total_shares)/Data$post_reach
 Data$ctr <- Data$link_clicks/Data$post_reach
 Data$views_rate <- Data$post_video_views/Data$post_reach
-Data$viral_fan_rate <- Data$post_reach_viral_unique/Data$post_reach_fan_unique
+Data$viral_fan_rate <- Data$post_reach_viral/Data$post_reach_fan
 Data$share_rate <- Data$total_shares/(Data$total_comments + Data$total_likes + Data$total_shares)
 Data$total_reactions <- (Data$feed_likes + Data$love + Data$wow + Data$haha + Data$sad + Data$angry)
 Data$feed_likes_rate <- round(Data$feed_likes/Data$total_reactions, 4)
@@ -51,8 +59,8 @@ Data$wow_rate <- round(Data$wow/Data$total_reactions, 4)
 Data$haha_rate <- round(Data$haha/Data$total_reactions, 4)
 Data$sad_rate <- round(Data$sad/Data$total_reactions, 4)
 Data$angry_rate <- round(Data$angry/Data$total_reactions, 4)
-Data$viral_rate <- (Data$post_reach_viral_unique/(Data$post_reach_fan_unique + Data$post_reach_viral_unique))
-Data$fan_rate <- (Data$post_reach_fan_unique/(Data$post_reach_fan_unique + Data$post_reach_viral_unique))
+Data$viral_rate <- (Data$post_reach_viral/(Data$post_reach_fan + Data$post_reach_viral))
+Data$fan_rate <- (Data$post_reach_fan/(Data$post_reach_fan + Data$post_reach_viral))
 Data$post_image <- paste("<img src ='", Data$full_picture,"'",'title=""', 'alt="" border="0" height="100" width="100">')
 
 
@@ -116,12 +124,8 @@ DataArticles <- Data[Data$post_type == "link",]
 DataArticles <- merge(DataArticles, EditorialData, by = "status_id", all.x = TRUE)
 DataArticles <- merge(DataArticles[,], LinkData[,c("status_id", "mitu_link", "category", "sponsored", "reposted", "original", "repost", "repost_order", "times_repost", "days_bet_repost")])
 DataArticles <- ddply(DataArticles, "mitu_link", transform, average_ctr = mean(ctr), average_interaction_rate = mean(interaction_rate), average_post_reach = mean(post_reach), average_link_clicks = mean(link_clicks))
-
 DataArticles$author_status <- ifelse(!(DataArticles$author %in% c("Jorge Rodriguez-Jimenez", "Omar Villegas", "Lucas Molandes", "Jessica Garcia", "Andrew Santiago", "Jason Marcus")), "Contributor", DataArticles$author)
-
-DataArticles$author_status <- ifelse(DataArticles$author %in% c("mitÃº Staff", "Adriana Venegas", "Fidel Martinez", "Alex Alvarez", "Wendy Barba"), "Old Staff", DataArticles$author_status)
-
-
+DataArticles$author_status <- ifelse(DataArticles$author %in% c("mitú Staff", "Adriana Venegas", "Fidel Martinez", "Alex Alvarez", "Wendy Barba"), "Old Staff", DataArticles$author_status)
 
 DataVideos <- Data[Data$post_type == "video",]
 DataVideos <- merge(DataVideos[,], VideoData[,c("status_id", "video_repost_sharetext", "video_meme", "series", "category", "format", "sponsored", "reposted", "original", "repost", "repost_order", "times_repost", "days_bet_repost")])
